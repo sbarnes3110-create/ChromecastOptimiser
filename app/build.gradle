@@ -1,0 +1,6 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'com.tvoptimiser.home'
+    compileSdk 35
+    defaultConfig { applicationId 'com.tvoptimiser.home'; minSdk 26; targetSdk 32; versionCode 1; versionName '1.0' }
+}
