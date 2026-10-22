@@ -13,3 +13,6 @@ New native read-only Health Connect dashboard for steps, last sleep session and 
 
 ## v4 Health Connect permission repair
 Add platform Android 14+ VIEW_PERMISSION_USAGE privacy rationale alias and package query for Android <=13, fix Health Connect settings intent, show user-visible permission status and fallback. New unique app id (v4) avoids debug signing collision with previous installations. No health writes; no watch commands.
+
+## v5 source attribution and sleep fragments
+Step aggregate source names from Health Connect AggregateResult.dataOrigins; sleep and heart rate sources from record Metadata. Show the longest recorded sleep session from the last 72h and flag anything under 30 min as a short fragment, rather than pretending it is a full night's sleep. Still read-only, no phone-to-watch writes, no MyFitnessPal integration directly.

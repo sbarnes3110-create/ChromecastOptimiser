@@ -10,7 +10,7 @@
   <queries>
     <package android:name="com.google.android.apps.healthdata"/>
   </queries>
-  <application android:label="FitClear Health Test 4" android:theme="@android:style/Theme.Material.NoActionBar" android:allowBackup="false" android:usesCleartextTraffic="false">
+  <application android:label="FitClear Sources Test 5" android:theme="@android:style/Theme.Material.NoActionBar" android:allowBackup="false" android:usesCleartextTraffic="false">
     <activity android:name=".PrivacyActivity" android:exported="true">
       <intent-filter>
         <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE"/>

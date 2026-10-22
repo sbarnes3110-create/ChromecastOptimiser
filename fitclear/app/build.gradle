@@ -3,11 +3,11 @@ android {
     namespace 'org.fitclear.hm08'
     compileSdk 36
     defaultConfig {
-        applicationId 'org.fitclear.hm08.v4'
+        applicationId 'org.fitclear.hm08.v5'
         minSdk 28
         targetSdk 34
-        versionCode 4
-        versionName '0.4-health-permissions'
+        versionCode 5
+        versionName '0.5-data-sources'
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
