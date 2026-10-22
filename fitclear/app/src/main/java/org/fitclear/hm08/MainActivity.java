@@ -10,6 +10,7 @@ import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.content.ClipData;
+import android.content.Intent;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -82,7 +83,8 @@ public class MainActivity extends Activity {
         panel.setPadding(px(16),px(20),px(16),px(20)); panel.setBackground(outline(false));
         title=label("READY",30,true); detail=label("Find the HM08 watch already paired with Android.",22,false);
         panel.addView(title); add(panel,detail,14); add(root,panel,26);
-        add(root,make("1. FIND MY WATCH",true,this::findWatch),22);
+        add(root,make("HEALTH CONNECT DASHBOARD",true,()->startActivity(new Intent(this,HealthActivity.class))),22);
+        add(root,make("1. FIND MY WATCH",false,this::findWatch),13);
         add(root,make("2. CONNECT READ-ONLY",false,this::connect),13);
         readButton=make("3. CHECK READ CHANNELS",false,this::readStatus);
         readButton.setEnabled(false); readButton.setAlpha(.5f); add(root,readButton,13);
