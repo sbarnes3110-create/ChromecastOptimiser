@@ -1,0 +1,16 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'org.fitclear.hm08'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'org.fitclear.hm08'
+        minSdk 28
+        targetSdk 32
+        versionCode 1
+        versionName '0.1-diagnostic'
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
