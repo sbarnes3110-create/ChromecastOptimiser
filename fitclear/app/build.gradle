@@ -1,7 +1,7 @@
 plugins { id 'com.android.application'; id 'org.jetbrains.kotlin.android' }
 android {
     namespace 'org.fitclear.hm08'
-    compileSdk 35
+    compileSdk 36
     defaultConfig {
         applicationId 'org.fitclear.hm08.v3'
         minSdk 28
