@@ -31,15 +31,15 @@ jobs:
         run: gradle :app:assembleDebug --no-daemon
       - uses: actions/upload-artifact@v4
         with:
-          name: FitClear-HM08-Diagnostic
+          name: FitClear-HM08-Diagnostic-v2
           path: fitclear/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
       - name: Publish APK on test branch
         run: |
-          cp fitclear/app/build/outputs/apk/debug/app-debug.apk FitClear-HM08-Diagnostic.apk
+          cp fitclear/app/build/outputs/apk/debug/app-debug.apk FitClear-HM08-Diagnostic-v2.apk
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add FitClear-HM08-Diagnostic.apk
+          git add FitClear-HM08-Diagnostic-v2.apk
           if ! git diff --cached --quiet; then
             git commit -m "Add FitClear diagnostic APK [skip ci]"
             git push origin HEAD:fitclear-hm08

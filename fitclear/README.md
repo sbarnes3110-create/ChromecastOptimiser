@@ -4,3 +4,6 @@ No health data writes, message access, unpairing, remote servers, or commands.
 This build is not the full FitClear companion app. Health Connect/MyFitnessPal syncing is not yet implemented.
 Keep FitCloudPro and pairing intact. The app may temporarily interfere with FitCloudPro while connected.
 See .github/workflows/fitclear-hm08.yml to build debug APK.
+
+## V2
+Separate app ID for installation alongside v1. Safely checks FF04 and FF03 read channels sequentially and explains read denial code 2. No commands, writes, notifications, pairing changes, health syncing or cloud transfers.

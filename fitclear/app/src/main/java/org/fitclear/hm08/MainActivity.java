@@ -25,6 +25,7 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import java.util.Locale;
+import java.util.ArrayList;
 import java.util.Set;
 import java.util.UUID;
 
@@ -33,6 +34,7 @@ public class MainActivity extends Activity {
     private static final int REQ_BLUETOOTH=100;
     private static final UUID VENDOR=UUID.fromString("000001ff-3c17-d293-8e48-14fe2e4da212");
     private static final UUID FF03=UUID.fromString("0000ff03-0000-1000-8000-00805f9b34fb");
+    private static final UUID FF04=UUID.fromString("0000ff04-0000-1000-8000-00805f9b34fb");
     private static final UUID BATTERY=UUID.fromString("0000180f-0000-1000-8000-00805f9b34fb");
     private static final UUID LEVEL=UUID.fromString("00002a19-0000-1000-8000-00805f9b34fb");
     private TextView title, detail;
@@ -40,6 +42,11 @@ public class MainActivity extends Activity {
     private BluetoothDevice watch;
     private BluetoothGatt gatt;
     private boolean connected=false, discovered=false;
+    private final ArrayList<BluetoothGattCharacteristic> readCandidates=new ArrayList<>();
+    private final ArrayList<String> readOutcomes=new ArrayList<>();
+    private int nextReadIndex=0;
+    private boolean readInProgress=false;
+    private BluetoothGattCharacteristic currentReading;
     private int px(int dp){return (int)(getResources().getDisplayMetrics().density*dp+0.5f);}
     private TextView label(String value,int size,boolean bold){
         TextView t=new TextView(this); t.setText(value); t.setTextColor(Color.WHITE);
@@ -77,7 +84,7 @@ public class MainActivity extends Activity {
         panel.addView(title); add(panel,detail,14); add(root,panel,26);
         add(root,make("1. FIND MY WATCH",true,this::findWatch),22);
         add(root,make("2. CONNECT READ-ONLY",false,this::connect),13);
-        readButton=make("3. READ SAFE STATUS",false,this::readStatus);
+        readButton=make("3. CHECK READ CHANNELS",false,this::readStatus);
         readButton.setEnabled(false); readButton.setAlpha(.5f); add(root,readButton,13);
         add(root,make("COPY TEST RESULT",false,this::copy),13);
         add(root,make("DISCONNECT",false,this::disconnect),13);
@@ -135,7 +142,7 @@ public class MainActivity extends Activity {
                 try{if(!current.discoverServices())status("SERVICE ERROR","Discovery failed to start.");}
                 catch(Exception ex){status("SERVICE ERROR",ex.getClass().getSimpleName());}
             }else if(state==BluetoothGatt.STATE_DISCONNECTED || result!=BluetoothGatt.GATT_SUCCESS){
-                connected=false;discovered=false;canRead(false);
+                connected=false;discovered=false;readInProgress=false;canRead(false);
                 status("DISCONNECTED","Bluetooth code "+result+". This does not prove incompatibility.");
             }
         }
@@ -158,33 +165,70 @@ public class MainActivity extends Activity {
             display(current,c.getUuid(),value,code);
         }
     };
+    private void includeCandidate(BluetoothGattService service, UUID id){
+        if(service==null)return;
+        BluetoothGattCharacteristic c=service.getCharacteristic(id);
+        if(c!=null && (c.getProperties()&BluetoothGattCharacteristic.PROPERTY_READ)!=0)readCandidates.add(c);
+    }
     private void readStatus(){
         if(!permission() || gatt==null || !connected || !discovered){status("NOT READY","Connect first.");return;}
-        BluetoothGattCharacteristic ch=null;
-        BluetoothGattService battery=gatt.getService(BATTERY);
-        if(battery!=null)ch=battery.getCharacteristic(LEVEL);
-        if(ch==null){BluetoothGattService service=gatt.getService(VENDOR);if(service!=null)ch=service.getCharacteristic(FF03);}
-        if(ch==null || (ch.getProperties()&BluetoothGattCharacteristic.PROPERTY_READ)==0){
-            status("NO SAFE READING","No supported readable characteristic was exposed.");return;
+        if(readInProgress){status("READING","The safe reading test is already in progress.");return;}
+        readCandidates.clear();readOutcomes.clear();
+        includeCandidate(gatt.getService(BATTERY),LEVEL);
+        BluetoothGattService service=gatt.getService(VENDOR);
+        // Never send vendor commands, write values, configure notification descriptors,
+        // unpair or modify any watch settings.
+        includeCandidate(service,FF04);
+        includeCandidate(service,FF03);
+        if(readCandidates.isEmpty()){status("NO READ CHANNELS","The HM08 exposes no supported readable channels.");return;}
+        nextReadIndex=0;readInProgress=true;canRead(false);
+        status("CHECKING","Testing "+readCandidates.size()+" read-only channels.");
+        readNext();
+    }
+    private String shortId(UUID id){
+        if(id.equals(LEVEL))return "Battery";
+        String u=id.toString();
+        if(u.startsWith("0000ff04"))return "FF04";
+        if(u.startsWith("0000ff03"))return "FF03";
+        return u;
+    }
+    private void readNext(){
+        if(!readInProgress || gatt==null || !connected)return;
+        if(nextReadIndex>=readCandidates.size()){
+            readInProgress=false;currentReading=null;canRead(true);
+            status("READ TEST COMPLETE",android.text.TextUtils.join("\n",readOutcomes)
+              +"\n\nNo watch settings were changed. These are diagnostics, not decoded health data.");
+            return;
         }
+        currentReading=readCandidates.get(nextReadIndex++);
         try{
-            if(gatt.readCharacteristic(ch))status("READING","Waiting for a read-only Bluetooth response…");
-            else status("READ FAILED","The watch didn't accept the read request.");
-        }catch(Exception ex){status("READ ERROR",ex.getClass().getSimpleName());}
+            if(!gatt.readCharacteristic(currentReading)){
+                readOutcomes.add(shortId(currentReading.getUuid())+": Android could not start the read.");
+                readNext();
+            }
+        }catch(Exception ex){
+            readOutcomes.add(shortId(currentReading.getUuid())+": "+ex.getClass().getSimpleName());
+            readNext();
+        }
     }
     private void display(BluetoothGatt current,UUID uuid,byte[] bytes,int code){
-        if(current!=gatt)return;
-        if(code!=BluetoothGatt.GATT_SUCCESS){status("READ REFUSED","Code "+code+". No changes made.");return;}
-        if(uuid.equals(LEVEL) && bytes!=null && bytes.length>0){
-            status("BATTERY LEVEL","Standard battery reading: "+(bytes[0]&255)+"%");
+        if(current!=gatt || !readInProgress || currentReading==null || !uuid.equals(currentReading.getUuid()))return;
+        String channel=shortId(uuid);
+        if(code==2){
+            readOutcomes.add(channel+": Read not permitted (code 2).");
+        }else if(code!=BluetoothGatt.GATT_SUCCESS){
+            readOutcomes.add(channel+": Read failed (code "+code+").");
+        }else if(uuid.equals(LEVEL)&&bytes!=null&&bytes.length>0){
+            readOutcomes.add("Battery: "+(bytes[0]&255)+"% (standard reading).");
         }else{
             StringBuilder hex=new StringBuilder();
             if(bytes!=null)for(int i=0;i<Math.min(bytes.length,32);i++){
-                if(i>0)hex.append(' ');hex.append(String.format(Locale.ROOT,"%02X",bytes[i]&255));
+                if(i>0)hex.append(" ");
+                hex.append(String.format(Locale.ROOT,"%02X",bytes[i]&255));
             }
-            status("READ SUCCESSFUL","Raw Bluetooth response: "+(hex.length()>0?hex:"(empty)")
-               +"\n\nThis is not decoded health data.");
+            readOutcomes.add(channel+": Read successful, raw bytes "+(hex.length()>0?hex:"(empty)")+".");
         }
+        readNext();
     }
     private void copy(){
         ClipboardManager cm=(ClipboardManager)getSystemService(CLIPBOARD_SERVICE);

@@ -3,11 +3,11 @@ android {
     namespace 'org.fitclear.hm08'
     compileSdk 35
     defaultConfig {
-        applicationId 'org.fitclear.hm08'
+        applicationId 'org.fitclear.hm08.v2'
         minSdk 28
         targetSdk 32
-        versionCode 1
-        versionName '0.1-diagnostic'
+        versionCode 2
+        versionName '0.2-diagnostic'
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
