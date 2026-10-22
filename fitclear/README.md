@@ -10,3 +10,6 @@ Separate app ID for installation alongside v1. Safely checks FF04 and FF03 read 
 
 ## V3 Health Connect
 New native read-only Health Connect dashboard for steps, last sleep session and latest recorded heart-rate. Permissions user-controlled, source may be other than HM08. Bluetooth diagnostics preserved. No export or writes.
+
+## v4 Health Connect permission repair
+Add platform Android 14+ VIEW_PERMISSION_USAGE privacy rationale alias and package query for Android <=13, fix Health Connect settings intent, show user-visible permission status and fallback. New unique app id (v4) avoids debug signing collision with previous installations. No health writes; no watch commands.

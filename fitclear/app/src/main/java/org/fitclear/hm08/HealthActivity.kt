@@ -43,8 +43,12 @@ class HealthActivity : ComponentActivity() {
     private val permissionsLauncher = registerForActivityResult(
         PermissionController.createRequestPermissionResultContract()
     ) { granted ->
-        if(granted.containsAll(needed)) refresh()
-        else state.text="Access not granted. Tap ALLOW READ ACCESS to try again."
+        if(granted.containsAll(needed)) {
+            state.text="Permission granted. Reading Health Connect…"
+            refresh()
+        } else {
+            state.text="No complete access yet. Open Health Connect below to check FitClear's permissions, or tap ALLOW READ ACCESS again."
+        }
     }
     private fun px(n:Int)= (resources.displayMetrics.density*n+0.5f).toInt()
     private fun label(s:String,size:Int,bold:Boolean=false)=TextView(this).apply{
@@ -107,8 +111,12 @@ class HealthActivity : ComponentActivity() {
         button(root,"ALLOW READ ACCESS"){requestPermissionsSafely()}
         button(root,"REFRESH MY READINGS"){refresh()}
         button(root,"OPEN HEALTH CONNECT"){
-            try{startActivity(Intent("android.health.connect.action.HEALTH_CONNECT_SETTINGS"))}
-            catch(e:Exception){state.text="Open Android Settings and search for Health Connect."}
+            state.text="Opening Health Connect settings…"
+            try {
+                startActivity(Intent(HealthConnectClient.ACTION_HEALTH_CONNECT_SETTINGS))
+            } catch(e:Exception) {
+                state.text="Couldn't open Health Connect automatically. Search for Health Connect in Android Settings."
+            }
         }
         add(root,label("These readings come from Health Connect. They might come from other apps, not necessarily your HM08. FitClear does not upload, change or delete health data.",19),18)
         add(root,label("If no readings appear, FitCloudPro may not yet be sharing with Health Connect. Keep your watch paired to FitCloudPro.",19),14)
@@ -131,12 +139,22 @@ class HealthActivity : ComponentActivity() {
         }
     }
     private fun requestPermissionsSafely(){
-        val hc=client?:run{state.text="Health Connect unavailable.";return}
-        lifecycleScope.launch{
-            try{
+        state.text="Permission button pressed. Checking access…"
+        val hc=client?:run{state.text="Health Connect unavailable. Try OPEN HEALTH CONNECT below.";return}
+        lifecycleScope.launch {
+            try {
                 val granted=hc.permissionController.getGrantedPermissions()
-                if(granted.containsAll(needed))refresh() else permissionsLauncher.launch(needed)
-            }catch(e:Exception){state.text="Permission error: "+e.javaClass.simpleName}
+                if(granted.containsAll(needed)) {
+                    state.text="Already permitted. Reading your health records…"
+                    refresh()
+                } else {
+                    state.text="Opening Android's Health Connect permission screen…"
+                    permissionsLauncher.launch(needed)
+                }
+            } catch(e:Exception) {
+                state.text="Unable to open permissions: "+e.javaClass.simpleName+
+                  ". Try OPEN HEALTH CONNECT below to grant access manually."
+            }
         }
     }
     private fun refresh(){
